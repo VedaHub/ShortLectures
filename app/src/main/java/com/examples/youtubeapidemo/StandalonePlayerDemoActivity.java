@@ -86,12 +86,12 @@ public class StandalonePlayerDemoActivity extends Activity implements View.OnCli
     Intent intent = null;
     if (v == playVideoButton) {
       intent = YouTubeStandalonePlayer.createVideoIntent(
-          this, DeveloperKey.DEVELOPER_KEY, VIDEO_ID, startTimeMillis, autoplay, lightboxMode);
+          this, BuildConfig.YOUTUBE_API_KEY, VIDEO_ID, startTimeMillis, autoplay, lightboxMode);
     } else if (v == playPlaylistButton) {
-      intent = YouTubeStandalonePlayer.createPlaylistIntent(this, DeveloperKey.DEVELOPER_KEY,
+      intent = YouTubeStandalonePlayer.createPlaylistIntent(this, BuildConfig.YOUTUBE_API_KEY,
           PLAYLIST_ID, startIndex, startTimeMillis, autoplay, lightboxMode);
     } else if (v == playVideoListButton) {
-      intent = YouTubeStandalonePlayer.createVideosIntent(this, DeveloperKey.DEVELOPER_KEY,
+      intent = YouTubeStandalonePlayer.createVideosIntent(this, BuildConfig.YOUTUBE_API_KEY,
           VIDEO_IDS, startIndex, startTimeMillis, autoplay, lightboxMode);
     }
 

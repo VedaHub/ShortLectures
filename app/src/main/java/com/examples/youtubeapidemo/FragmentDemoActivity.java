@@ -40,7 +40,7 @@ public class FragmentDemoActivity extends YouTubeFailureRecoveryActivity {
 
     YouTubePlayerFragment youTubePlayerFragment =
         (YouTubePlayerFragment) getFragmentManager().findFragmentById(R.id.youtube_fragment);
-    youTubePlayerFragment.initialize(DeveloperKey.DEVELOPER_KEY, this);
+    youTubePlayerFragment.initialize(BuildConfig.YOUTUBE_API_KEY, this);
   }
 
   @Override

@@ -104,7 +104,7 @@ public class PlayerControlsDemoActivity extends YouTubeFailureRecoveryActivity i
     pauseButton.setOnClickListener(this);
     skipTo.setOnEditorActionListener(this);
 
-    youTubePlayerView.initialize(DeveloperKey.DEVELOPER_KEY, this);
+    youTubePlayerView.initialize(BuildConfig.YOUTUBE_API_KEY, this);
 
     playlistEventListener = new MyPlaylistEventListener();
     playerStateChangeListener = new MyPlayerStateChangeListener();

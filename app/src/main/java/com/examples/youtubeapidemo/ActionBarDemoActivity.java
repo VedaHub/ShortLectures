@@ -58,7 +58,7 @@ public class ActionBarDemoActivity extends YouTubeFailureRecoveryActivity implem
     playerFragment =
         (YouTubePlayerFragment) getFragmentManager().findFragmentById(R.id.player_fragment);
     tutorialTextView = findViewById(R.id.tutorial_text);
-    playerFragment.initialize(DeveloperKey.DEVELOPER_KEY, this);
+    playerFragment.initialize(BuildConfig.YOUTUBE_API_KEY, this);
     viewContainer.setActionBar(getActionBar());
 
     // Action bar background is transparent by default.

@@ -47,7 +47,7 @@ import com.examples.youtubeapidemo.ui.ImageWallView;
  * wall of flipping YouTube thumbnails.  Every 5 flips, one of the thumbnails will be replaced with
  * a playing YouTube video.
  */
-@TargetApi(11)
+@TargetApi(30)
 public class VideoWallDemoActivity extends Activity implements
     FlippingView.Listener,
     YouTubePlayer.OnInitializedListener,
@@ -123,7 +123,7 @@ public class VideoWallDemoActivity extends Activity implements
     viewFrame.addView(imageWallView, MATCH_PARENT, MATCH_PARENT);
 
     thumbnailView = new YouTubeThumbnailView(this);
-    thumbnailView.initialize(DeveloperKey.DEVELOPER_KEY, this);
+    thumbnailView.initialize(BuildConfig.YOUTUBE_API_KEY, this);
 
     flippingView = new FlippingView(this, this, imageWidth, imageHeight);
     flippingView.setFlipDuration(INITIAL_FLIP_DURATION_MILLIS);
@@ -135,7 +135,7 @@ public class VideoWallDemoActivity extends Activity implements
     viewFrame.addView(playerView, imageWidth, imageHeight);
 
     playerFragment = YouTubePlayerFragment.newInstance();
-    playerFragment.initialize(DeveloperKey.DEVELOPER_KEY, this);
+    playerFragment.initialize(BuildConfig.YOUTUBE_API_KEY, this);
     getFragmentManager().beginTransaction().add(R.id.player_view, playerFragment).commit();
 
     flipDelayHandler = new FlipDelayHandler();
@@ -205,8 +205,8 @@ public class VideoWallDemoActivity extends Activity implements
         errorDialog.dismiss();
       }
       errorDialog = null;
-      playerFragment.initialize(DeveloperKey.DEVELOPER_KEY, this);
-      thumbnailView.initialize(DeveloperKey.DEVELOPER_KEY, this);
+      playerFragment.initialize(BuildConfig.YOUTUBE_API_KEY, this);
+      thumbnailView.initialize(BuildConfig.YOUTUBE_API_KEY, this);
     }
   }
 

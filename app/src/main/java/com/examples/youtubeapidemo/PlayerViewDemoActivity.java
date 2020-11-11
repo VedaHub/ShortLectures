@@ -36,7 +36,7 @@ public class PlayerViewDemoActivity extends YouTubeFailureRecoveryActivity {
     setContentView(R.layout.playerview_demo);
 
     YouTubePlayerView youTubeView = (YouTubePlayerView) findViewById(R.id.youtube_view);
-    youTubeView.initialize(DeveloperKey.DEVELOPER_KEY, this);
+    youTubeView.initialize(BuildConfig.YOUTUBE_API_KEY, this);
   }
 
   @Override

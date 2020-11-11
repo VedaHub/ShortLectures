@@ -15,8 +15,30 @@
  */
 package com.examples.youtubeapidemo;
 
-import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
-import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.annotation.TargetApi;
+import android.app.Activity;
+import android.app.ListFragment;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.Configuration;
+import android.os.AsyncTask;
+import android.os.Build;
+import android.os.Bundle;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
+import android.view.ViewPropertyAnimator;
+import android.widget.BaseAdapter;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.ListView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.youtube.player.YouTubeApiServiceUtil;
 import com.google.android.youtube.player.YouTubeInitializationResult;
@@ -28,34 +50,42 @@ import com.google.android.youtube.player.YouTubePlayerFragment;
 import com.google.android.youtube.player.YouTubeThumbnailLoader;
 import com.google.android.youtube.player.YouTubeThumbnailLoader.ErrorReason;
 import com.google.android.youtube.player.YouTubeThumbnailView;
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
+import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
+import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
+import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.HttpRequest;
+import com.google.api.client.http.HttpRequestInitializer;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.JsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.model.PlaylistItem;
+import com.google.api.services.youtube.model.PlaylistItemListResponse;
+import com.google.api.services.youtube.model.Video;
+import com.google.api.services.youtube.model.VideoListResponse;
+import com.squareup.picasso.Picasso;
 
-import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
-import android.annotation.TargetApi;
-import android.app.Activity;
-import android.app.ListFragment;
-import android.content.Context;
-import android.content.Intent;
-import android.content.res.Configuration;
-import android.os.Build;
-import android.os.Bundle;
-import android.view.Gravity;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewGroup.LayoutParams;
-import android.view.ViewPropertyAnimator;
-import android.widget.BaseAdapter;
-import android.widget.FrameLayout;
-import android.widget.ListView;
-import android.widget.TextView;
-import android.widget.Toast;
-
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Array;
+import java.security.GeneralSecurityException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static android.view.ViewGroup.LayoutParams.MATCH_PARENT;
+import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
 
 /**
  * A sample Activity showing how to manage multiple YouTubeThumbnailViews in an adapter for display
@@ -75,6 +105,8 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
   /** The request code when calling startActivityForResult to recover from an API service error. */
   private static final int RECOVERY_DIALOG_REQUEST = 1;
 
+//  SharedPreferences sharedPreferences = getPreferences(MODE_PRIVATE);
+
   private VideoListFragment listFragment;
   private VideoFragment videoFragment;
 
@@ -91,26 +123,28 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
 
     listFragment = (VideoListFragment) getFragmentManager().findFragmentById(R.id.list_fragment);
     videoFragment =
-        (VideoFragment) getFragmentManager().findFragmentById(R.id.video_fragment_container);
+            (VideoFragment) getFragmentManager().findFragmentById(R.id.video_fragment_container);
 
     videoBox = findViewById(R.id.video_box);
     closeButton = findViewById(R.id.close_button);
 
     videoBox.setVisibility(View.INVISIBLE);
-
     layout();
 
     checkYouTubeApi();
   }
 
+  static void performLayout() {
+
+  }
   private void checkYouTubeApi() {
     YouTubeInitializationResult errorReason =
-        YouTubeApiServiceUtil.isYouTubeApiServiceAvailable(this);
+            YouTubeApiServiceUtil.isYouTubeApiServiceAvailable(this);
     if (errorReason.isUserRecoverableError()) {
       errorReason.getErrorDialog(this, RECOVERY_DIALOG_REQUEST).show();
     } else if (errorReason != YouTubeInitializationResult.SUCCESS) {
       String errorMessage =
-          String.format(getString(R.string.error_player), errorReason.toString());
+              String.format(getString(R.string.error_player), errorReason.toString());
       Toast.makeText(this, errorMessage, Toast.LENGTH_LONG).show();
     }
   }
@@ -136,7 +170,17 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
 
     layout();
   }
+    @Override
+    public void onBackPressed() {
 
+      if(isFullscreen) {
+          isFullscreen = false;
+          layout();
+      } else {
+        super.onBackPressed();
+      }
+
+    }
   /**
    * Sets up the layout programatically for the three different states. Portrait, landscape or
    * fullscreen+landscape. This has to be done programmatically because we handle the orientation
@@ -145,7 +189,8 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
    */
   private void layout() {
     boolean isPortrait =
-        getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+            getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+    System.out.println("object: " + this);
 
     listFragment.getView().setVisibility(isFullscreen ? View.GONE : View.VISIBLE);
     listFragment.setLabelVisibility(isPortrait);
@@ -166,7 +211,7 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
       int videoWidth = screenWidth - screenWidth / 4 - dpToPx(LANDSCAPE_VIDEO_PADDING_DP);
       setLayoutSize(videoFragment.getView(), videoWidth, WRAP_CONTENT);
       setLayoutSizeAndGravity(videoBox, videoWidth, WRAP_CONTENT,
-          Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+              Gravity.RIGHT | Gravity.CENTER_VERTICAL);
     }
   }
 
@@ -175,8 +220,8 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
     listFragment.getListView().requestLayout();
     videoFragment.pause();
     ViewPropertyAnimator animator = videoBox.animate()
-        .translationYBy(videoBox.getHeight())
-        .setDuration(ANIMATION_DURATION_MILLIS);
+            .translationYBy(videoBox.getHeight())
+            .setDuration(ANIMATION_DURATION_MILLIS);
     runOnAnimationEnd(animator, new Runnable() {
       @Override
       public void run() {
@@ -204,26 +249,162 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
    */
   public static final class VideoListFragment extends ListFragment {
 
-    private static final List<VideoEntry> VIDEO_LIST;
-    static {
-      List<VideoEntry> list = new ArrayList<VideoEntry>();
-      list.add(new VideoEntry("YouTube Collection", "Y_UmWdcTrrc"));
-      list.add(new VideoEntry("GMail Tap", "1KhZKNZO8mQ"));
-      list.add(new VideoEntry("Chrome Multitask", "UiLSiqyDf4Y"));
-      list.add(new VideoEntry("Google Fiber", "re0VRK6ouwI"));
-      list.add(new VideoEntry("Autocompleter", "blB_X38YSxQ"));
-      list.add(new VideoEntry("GMail Motion", "Bu927_ul_X0"));
-      list.add(new VideoEntry("Translate for Animals", "3I24bSteJpw"));
-      VIDEO_LIST = Collections.unmodifiableList(list);
+    private List<VideoEntry> videoList = null;
+    private static final String CLIENT_SECRETS= "client_secret.json";
+    private static final Collection<String> SCOPES =
+            Arrays.asList("https://www.googleapis.com/auth/youtube.readonly");
+
+    private static final String APPLICATION_NAME = "Short Kripaluji Pravachans";
+    private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
+    /**
+     * Create an authorized Credential object.
+     *
+     * @return an authorized Credential object.
+     * @throws IOException
+     */
+    public static Credential authorize(final NetHttpTransport httpTransport) throws IOException {
+      // Load client secrets.
+      InputStream in = VideoListFragment.class.getResourceAsStream(CLIENT_SECRETS);
+      GoogleClientSecrets clientSecrets =
+              GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
+      // Build flow and trigger user authorization request.
+      GoogleAuthorizationCodeFlow flow =
+              new GoogleAuthorizationCodeFlow.Builder(httpTransport, JSON_FACTORY, clientSecrets, SCOPES)
+                      .build();
+      Credential credential =
+              new AuthorizationCodeInstalledApp(flow, new LocalServerReceiver()).authorize("user");
+      return credential;
     }
+
+    /**
+     * Build and return an authorized API client service.
+     *
+     * @return an authorized API client service
+     * @throws GeneralSecurityException, IOException
+     */
+    public static YouTube getService() throws GeneralSecurityException, IOException {
+      final NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+      Credential credential = authorize(httpTransport);
+      return new YouTube.Builder(httpTransport, JSON_FACTORY, credential)
+              .setApplicationName(APPLICATION_NAME)
+              .build();
+    }
+
+//    static {
+//
+//      List<VideoEntry> list = new ArrayList<VideoEntry>();
+//      list.add(new VideoEntry("YouTube Collection", "Y_UmWdcTrrc"));
+//      list.add(new VideoEntry("GMail Tap", "1KhZKNZO8mQ"));
+//      list.add(new VideoEntry("Chrome Multitask", "UiLSiqyDf4Y"));
+//      list.add(new VideoEntry("Google Fiber", "re0VRK6ouwI"));
+//      list.add(new VideoEntry("Autocompleter", "blB_X38YSxQ"));
+//      list.add(new VideoEntry("GMail Motion", "Bu927_ul_X0"));
+//      list.add(new VideoEntry("Translate for Animals", "3I24bSteJpw"));
+//      videoList = Collections.unmodifiableList(list);
+//    }
 
     private PageAdapter adapter;
     private View videoBox;
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
+    public void onCreate(Bundle savedInstanceState)  {
       super.onCreate(savedInstanceState);
-      adapter = new PageAdapter(getActivity(), VIDEO_LIST);
+      PlaylistItemListResponse response = null;
+      try {
+        YouTube youtube = new YouTube.Builder(Auth.HTTP_TRANSPORT, Auth.JSON_FACTORY, new HttpRequestInitializer() {
+          @Override
+          public void initialize(HttpRequest request) throws IOException {
+          }
+        }).setApplicationName(APPLICATION_NAME).build();
+
+        // Define and execute the API request
+        YouTube.PlaylistItems.List request = youtube.playlistItems().list("snippet");
+        request.setKey(BuildConfig.YOUTUBE_API_KEY);
+        AsyncTask<?, ?, ?> runningTask = new PlaylistRequest(request, response, this, videoList, youtube).execute();
+
+//        response = request.setMaxResults(25L)
+//                .setPlaylistId("PLByq9Ggy7VYe5mkjoh6aeN21EzpHwpj2j")
+//                .execute();
+      } catch (Exception ex){
+        ex.printStackTrace();
+
+      }
+
+    }
+    class SortPlaylist implements Comparator<VideoEntry>
+    {
+
+      @Override
+      public int compare(VideoEntry t1, VideoEntry t2) {
+        return t1.lastWatched.compareTo(t2.lastWatched);
+      }
+    }
+    private final class PlaylistRequest extends AsyncTask<Void, Void, String> {
+      YouTube.PlaylistItems.List req; PlaylistItemListResponse res;
+      VideoListFragment vListFrag; List<VideoEntry> vList;
+      YouTube youtube;
+      public PlaylistRequest(YouTube.PlaylistItems.List request, PlaylistItemListResponse response, VideoListFragment vf, List<VideoEntry> videoList, YouTube youtube ){
+        super();
+        req = request;
+        res = response;
+        vListFrag = vf;
+        vList = videoList;
+        this.youtube = youtube;
+      }
+      @Override
+      protected String doInBackground(Void... v) {
+        try {
+          String pageToken = "";
+          int newVideosCount = 0;
+          ArrayList<VideoEntry> list = new ArrayList<VideoEntry>();
+
+          do {
+            res = req.setMaxResults(49L)
+                    .setPlaylistId("PLByq9Ggy7VYe5mkjoh6aeN21EzpHwpj2j").setPageToken(pageToken)
+                    .execute();
+            //          System.out.println("response count:"+res.getItems().size());
+            Activity activity = getActivity();
+            SharedPreferences sharedPreferences = activity.getPreferences(MODE_PRIVATE);
+            pageToken = res.getNextPageToken();
+            String videoIdStr = "";
+            for (PlaylistItem item: res.getItems()) {
+                videoIdStr += item.getSnippet().getResourceId().getVideoId() + ",";
+            }
+              YouTube.Videos.List request = youtube.videos()
+                      .list("status, snippet, contentDetails");
+              request.setKey(BuildConfig.YOUTUBE_API_KEY);
+              VideoListResponse response = request.setId(videoIdStr).execute();
+
+              for (Video vid : response.getItems()) {
+                if(vid.getStatus().getEmbeddable()) {
+                  String lastWatched = sharedPreferences.getString(vid.getId(), "");
+                  if(lastWatched == "") {
+                    newVideosCount++;
+                  }
+                  list.add(new VideoEntry(vid.getSnippet().getTitle(), vid.getId(), lastWatched, vid.getContentDetails().getDuration().replace("PT", "").replace('M', 'm').replace('S', 's')));
+                }
+              }
+          } while(newVideosCount < 50);
+          Collections.shuffle(list);
+          Collections.sort(list, new SortPlaylist());
+          vListFrag.videoList = Collections.unmodifiableList(list);
+          vListFrag.adapter = new PageAdapter(vListFrag.getActivity(), vListFrag.videoList);
+        }
+        catch (Exception ex) {
+          ex.printStackTrace();
+        }
+        return "Success";
+      }
+
+      @Override
+      protected void onPostExecute(String result) {
+//        ctxt.findViewById(R.id.list_fragment).invalidate();
+//        vListFrag.getActivity().findViewById(R.id.video_box).invalidate();
+//        vListFrag.getActivity().findViewById(R.id.list_fragment).invalidate();
+        System.out.println("onPostExecute");
+        setListAdapter(adapter);
+//        vListFrag.getActivity().
+        }
     }
 
     @Override
@@ -232,15 +413,15 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
 
       videoBox = getActivity().findViewById(R.id.video_box);
       getListView().setChoiceMode(ListView.CHOICE_MODE_SINGLE);
-      setListAdapter(adapter);
+
     }
 
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
-      String videoId = VIDEO_LIST.get(position).videoId;
+      String videoId = videoList.get(position).videoId;
 
       VideoFragment videoFragment =
-          (VideoFragment) getFragmentManager().findFragmentById(R.id.video_fragment_container);
+              (VideoFragment) getFragmentManager().findFragmentById(R.id.video_fragment_container);
       videoFragment.setVideoId(videoId);
 
       // The videoBox is INVISIBLE if no video was previously selected, so we need to show it now.
@@ -262,15 +443,16 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
     public void onDestroyView() {
       super.onDestroyView();
 
-      adapter.releaseLoaders();
+      if(adapter != null)
+        adapter.releaseLoaders();
     }
 
     public void setLabelVisibility(boolean visible) {
-      adapter.setLabelVisibility(visible);
+      if(adapter != null)
+        adapter.setLabelVisibility(visible);
     }
 
   }
-
   /**
    * Adapter for the video list. Manages a set of YouTubeThumbnailViews, including initializing each
    * of them only once and keeping track of the loader of each one. When the ListFragment gets
@@ -307,6 +489,7 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
       labelsVisible = visible;
       for (View view : entryViews) {
         view.findViewById(R.id.text).setVisibility(visible ? View.VISIBLE : View.GONE);
+        view.findViewById(R.id.last_watched).setVisibility(visible ? View.VISIBLE : View.GONE);
       }
     }
 
@@ -336,7 +519,7 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
         view = inflater.inflate(R.layout.video_list_item, parent, false);
         YouTubeThumbnailView thumbnail = (YouTubeThumbnailView) view.findViewById(R.id.thumbnail);
         thumbnail.setTag(entry.videoId);
-        thumbnail.initialize(DeveloperKey.DEVELOPER_KEY, thumbnailListener);
+        thumbnail.initialize(BuildConfig.YOUTUBE_API_KEY, thumbnailListener);
       } else {
         YouTubeThumbnailView thumbnail = (YouTubeThumbnailView) view.findViewById(R.id.thumbnail);
         YouTubeThumbnailLoader loader = thumbnailViewToLoaderMap.get(thumbnail);
@@ -348,32 +531,50 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
           // 3) The view is already created and already initialized. Simply set the right videoId
           //    on the loader.
           thumbnail.setImageResource(R.drawable.loading_thumbnail);
-          loader.setVideo(entry.videoId);
+//          loader.setVideo(entry.videoId);
+//          Picasso.get()
+//                  .load(getYoutubeThumbnailUrlFromVideoUrl(entry.videoId))
+//                  .into(thumbnail);
+//          thumbnail.setScaleType(ImageView.ScaleType.FIT_XY);
         }
       }
+      YouTubeThumbnailView thumbnail = (YouTubeThumbnailView) view.findViewById(R.id.thumbnail);
+
+      ImageView thumbnailImage = (ImageView)  view.findViewById(R.id.thumbnail_image);
+      Picasso.get().load(getYoutubeThumbnailUrlFromVideoUrl(entry.videoId)).into(thumbnailImage);
       TextView label = ((TextView) view.findViewById(R.id.text));
+      TextView lastWatched = ((TextView) view.findViewById(R.id.last_watched));
+      TextView duration = ((TextView) view.findViewById(R.id.duration));
       label.setText(entry.text);
+      lastWatched.setText(entry.lastWatched);
+      duration.setText(entry.duration);
       label.setVisibility(labelsVisible ? View.VISIBLE : View.GONE);
+      lastWatched.setVisibility(labelsVisible ? View.VISIBLE : View.GONE);
+      duration.setVisibility(labelsVisible ? View.VISIBLE : View.GONE);
       return view;
+    }
+    public static String getYoutubeThumbnailUrlFromVideoUrl(String videoId) {
+      return "http://img.youtube.com/vi/"+ videoId + "/mqdefault.jpg";
     }
 
     private final class ThumbnailListener implements
-        YouTubeThumbnailView.OnInitializedListener,
-        YouTubeThumbnailLoader.OnThumbnailLoadedListener {
+            YouTubeThumbnailView.OnInitializedListener,
+            YouTubeThumbnailLoader.OnThumbnailLoadedListener {
 
       @Override
       public void onInitializationSuccess(
-          YouTubeThumbnailView view, YouTubeThumbnailLoader loader) {
+              YouTubeThumbnailView view, YouTubeThumbnailLoader loader) {
         loader.setOnThumbnailLoadedListener(this);
         thumbnailViewToLoaderMap.put(view, loader);
         view.setImageResource(R.drawable.loading_thumbnail);
         String videoId = (String) view.getTag();
-        loader.setVideo(videoId);
+//        loader.setVideo(videoId);
+//        view.setScaleType(ImageView.ScaleType.FIT_XY);
       }
 
       @Override
       public void onInitializationFailure(
-          YouTubeThumbnailView view, YouTubeInitializationResult loader) {
+              YouTubeThumbnailView view, YouTubeInitializationResult loader) {
         view.setImageResource(R.drawable.no_thumbnail);
       }
 
@@ -390,7 +591,7 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
   }
 
   public static final class VideoFragment extends YouTubePlayerFragment
-      implements OnInitializedListener {
+          implements OnInitializedListener {
 
     private YouTubePlayer player;
     private String videoId;
@@ -398,12 +599,41 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
     public static VideoFragment newInstance() {
       return new VideoFragment();
     }
+    private final YouTubePlayer.PlaybackEventListener mPlaybackEventListener = new YouTubePlayer.PlaybackEventListener() {
+      @Override
+      public void onPlaying() {
+        SharedPreferences prefs = getActivity().getPreferences(MODE_PRIVATE);
+        Date dNow = new Date( );
+        SimpleDateFormat ft =
+                new SimpleDateFormat ("yyyy-MM-dd");
+        prefs.edit().putString(videoId, ft.format(dNow)).commit();
+      }
+
+      @Override
+      public void onPaused() {
+
+      }
+
+      @Override
+      public void onStopped() {
+
+      }
+
+      @Override
+      public void onBuffering(boolean b) {
+
+      }
+
+      @Override
+      public void onSeekTo(int i) {
+
+      }
+    };
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
       super.onCreate(savedInstanceState);
-
-      initialize(DeveloperKey.DEVELOPER_KEY, this);
+      initialize(BuildConfig.YOUTUBE_API_KEY, this);
     }
 
     @Override
@@ -437,6 +667,7 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
       if (!restored && videoId != null) {
         player.cueVideo(videoId);
       }
+      player.setPlaybackEventListener(mPlaybackEventListener);
     }
 
     @Override
@@ -449,10 +680,14 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
   private static final class VideoEntry {
     private final String text;
     private final String videoId;
+    private final String lastWatched;
+    private final String duration;
 
-    public VideoEntry(String text, String videoId) {
+    public VideoEntry(String text, String videoId, String lastWatched, String duration) {
       this.text = text;
       this.videoId = videoId;
+      this.lastWatched = lastWatched;
+      this.duration = duration;
     }
   }
 

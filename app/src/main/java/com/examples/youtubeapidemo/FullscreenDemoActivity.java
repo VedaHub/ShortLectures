@@ -72,7 +72,7 @@ public class FullscreenDemoActivity extends YouTubeFailureRecoveryActivity imple
     // You can use your own button to switch to fullscreen too
     fullscreenButton.setOnClickListener(this);
 
-    playerView.initialize(DeveloperKey.DEVELOPER_KEY, this);
+    playerView.initialize(BuildConfig.YOUTUBE_API_KEY, this);
 
     doLayout();
   }

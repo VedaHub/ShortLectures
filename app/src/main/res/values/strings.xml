@@ -19,7 +19,7 @@
     <string name="youtube_api_demo">YouTube API Demos</string>
 
     <string name="videowall_demo_name">Video Wall</string>
-    <string name="videolist_demo_name">Video List</string>
+    <string name="videolist_demo_name">Short Lectures by Kripaluji</string>
     <string name="standalone_player_demo_name">Standalone Player</string>
     <string name="playerview_demo_name">Simple PlayerView</string>
     <string name="fragment_demo_name">Simple PlayerFragment</string>
