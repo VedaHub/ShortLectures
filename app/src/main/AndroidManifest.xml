@@ -26,7 +26,11 @@
     <activity
         android:label="@string/youtube_api_demo"
         android:name=".YouTubeAPIDemoActivity">
-      <meta-data android:name="@string/isLaunchableActivity" android:value="true"/>
+      <intent-filter >
+        <action android:name="android.intent.action.MAIN" />
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+      <meta-data android:name="@string/isLaunchableActivity" android:value="false"/>
     </activity>
 
     <activity
@@ -43,10 +47,6 @@
         android:label="@string/videolist_demo_name"
         android:name=".VideoListDemoActivity"
         android:configChanges="orientation|keyboardHidden|screenSize">
-      <intent-filter >
-        <action android:name="android.intent.action.MAIN" />
-        <category android:name="android.intent.category.LAUNCHER" />
-      </intent-filter>
       <meta-data android:name="@string/minVersion" android:value="13"/>
       <meta-data android:name="@string/isLaunchableActivity" android:value="true"/>
     </activity>

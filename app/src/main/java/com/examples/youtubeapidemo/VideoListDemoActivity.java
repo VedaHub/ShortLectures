@@ -23,6 +23,7 @@ import android.app.ListFragment;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ResolveInfo;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -47,6 +48,7 @@ import com.google.android.youtube.player.YouTubePlayer.OnFullscreenListener;
 import com.google.android.youtube.player.YouTubePlayer.OnInitializedListener;
 import com.google.android.youtube.player.YouTubePlayer.Provider;
 import com.google.android.youtube.player.YouTubePlayerFragment;
+import com.google.android.youtube.player.YouTubeStandalonePlayer;
 import com.google.android.youtube.player.YouTubeThumbnailLoader;
 import com.google.android.youtube.player.YouTubeThumbnailLoader.ErrorReason;
 import com.google.android.youtube.player.YouTubeThumbnailView;
@@ -94,7 +96,7 @@ import static android.view.ViewGroup.LayoutParams.WRAP_CONTENT;
  * The demo supports custom fullscreen and transitioning between portrait and landscape without
  * rebuffering.
  */
-@TargetApi(13)
+@TargetApi(30)
 public final class VideoListDemoActivity extends Activity implements OnFullscreenListener {
 
   /** The duration of the animation sliding up the video in portrait. */
@@ -105,13 +107,7 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
   /** The request code when calling startActivityForResult to recover from an API service error. */
   private static final int RECOVERY_DIALOG_REQUEST = 1;
 
-//  SharedPreferences sharedPreferences = getPreferences(MODE_PRIVATE);
-
   private VideoListFragment listFragment;
-  private VideoFragment videoFragment;
-
-  private View videoBox;
-  private View closeButton;
 
   private boolean isFullscreen;
 
@@ -122,15 +118,7 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
     setContentView(R.layout.video_list_demo);
 
     listFragment = (VideoListFragment) getFragmentManager().findFragmentById(R.id.list_fragment);
-    videoFragment =
-            (VideoFragment) getFragmentManager().findFragmentById(R.id.video_fragment_container);
-
-    videoBox = findViewById(R.id.video_box);
-    closeButton = findViewById(R.id.close_button);
-
-    videoBox.setVisibility(View.INVISIBLE);
-    layout();
-
+  //TODO: add listener for standalone player
     checkYouTubeApi();
   }
 
@@ -158,79 +146,46 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
   }
 
   @Override
-  public void onConfigurationChanged(Configuration newConfig) {
-    super.onConfigurationChanged(newConfig);
-
-    layout();
-  }
-
-  @Override
   public void onFullscreen(boolean isFullscreen) {
     this.isFullscreen = isFullscreen;
-
-    layout();
   }
-    @Override
-    public void onBackPressed() {
 
-      if(isFullscreen) {
-          isFullscreen = false;
-          layout();
-      } else {
-        super.onBackPressed();
-      }
-
-    }
   /**
    * Sets up the layout programatically for the three different states. Portrait, landscape or
    * fullscreen+landscape. This has to be done programmatically because we handle the orientation
    * changes ourselves in order to get fluent fullscreen transitions, so the xml layout resources
    * do not get reloaded.
    */
-  private void layout() {
-    boolean isPortrait =
-            getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
-    System.out.println("object: " + this);
+//  private void layout() {
+//    boolean isPortrait =
+//            getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
+//    System.out.println("object: " + this);
+//
+//    listFragment.getView().setVisibility(isFullscreen ? View.GONE : View.VISIBLE);
+//    listFragment.setLabelVisibility(isPortrait);
+////    closeButton.setVisibility(isPortrait ? View.VISIBLE : View.GONE);
+//
+////    if (isFullscreen) {
+////      videoBox.setTranslationY(0); // Reset any translation that was applied in portrait.
+////      setLayoutSize(videoFragment.getView(), MATCH_PARENT, MATCH_PARENT);
+////      setLayoutSizeAndGravity(videoBox, MATCH_PARENT, MATCH_PARENT, Gravity.TOP | Gravity.LEFT);
+////    } else if (isPortrait) {
+//      setLayoutSize(listFragment.getView(), MATCH_PARENT, MATCH_PARENT);
+//      setLayoutSize(videoFragment.getView(), MATCH_PARENT, WRAP_CONTENT);
+//      setLayoutSizeAndGravity(videoBox, MATCH_PARENT, WRAP_CONTENT, Gravity.BOTTOM);
+////    } else {
+////      videoBox.setTranslationY(0); // Reset any translation that was applied in portrait.
+////      int screenWidth = dpToPx(getResources().getConfiguration().screenWidthDp);
+////      setLayoutSize(listFragment.getView(), screenWidth / 4, MATCH_PARENT);
+////      int videoWidth = screenWidth - screenWidth / 4 - dpToPx(LANDSCAPE_VIDEO_PADDING_DP);
+////      setLayoutSize(videoFragment.getView(), videoWidth, WRAP_CONTENT);
+////      setLayoutSizeAndGravity(videoBox, videoWidth, WRAP_CONTENT,
+////              Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+////    }
+//  }
 
-    listFragment.getView().setVisibility(isFullscreen ? View.GONE : View.VISIBLE);
-    listFragment.setLabelVisibility(isPortrait);
-    closeButton.setVisibility(isPortrait ? View.VISIBLE : View.GONE);
 
-    if (isFullscreen) {
-      videoBox.setTranslationY(0); // Reset any translation that was applied in portrait.
-      setLayoutSize(videoFragment.getView(), MATCH_PARENT, MATCH_PARENT);
-      setLayoutSizeAndGravity(videoBox, MATCH_PARENT, MATCH_PARENT, Gravity.TOP | Gravity.LEFT);
-    } else if (isPortrait) {
-      setLayoutSize(listFragment.getView(), MATCH_PARENT, MATCH_PARENT);
-      setLayoutSize(videoFragment.getView(), MATCH_PARENT, WRAP_CONTENT);
-      setLayoutSizeAndGravity(videoBox, MATCH_PARENT, WRAP_CONTENT, Gravity.BOTTOM);
-    } else {
-      videoBox.setTranslationY(0); // Reset any translation that was applied in portrait.
-      int screenWidth = dpToPx(getResources().getConfiguration().screenWidthDp);
-      setLayoutSize(listFragment.getView(), screenWidth / 4, MATCH_PARENT);
-      int videoWidth = screenWidth - screenWidth / 4 - dpToPx(LANDSCAPE_VIDEO_PADDING_DP);
-      setLayoutSize(videoFragment.getView(), videoWidth, WRAP_CONTENT);
-      setLayoutSizeAndGravity(videoBox, videoWidth, WRAP_CONTENT,
-              Gravity.RIGHT | Gravity.CENTER_VERTICAL);
-    }
-  }
-
-  public void onClickClose(@SuppressWarnings("unused") View view) {
-    listFragment.getListView().clearChoices();
-    listFragment.getListView().requestLayout();
-    videoFragment.pause();
-    ViewPropertyAnimator animator = videoBox.animate()
-            .translationYBy(videoBox.getHeight())
-            .setDuration(ANIMATION_DURATION_MILLIS);
-    runOnAnimationEnd(animator, new Runnable() {
-      @Override
-      public void run() {
-        videoBox.setVisibility(View.INVISIBLE);
-      }
-    });
-  }
-
-  @TargetApi(16)
+  @TargetApi(30)
   private void runOnAnimationEnd(ViewPropertyAnimator animator, final Runnable runnable) {
     if (Build.VERSION.SDK_INT >= 16) {
       animator.withEndAction(runnable);
@@ -276,35 +231,8 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
       return credential;
     }
 
-    /**
-     * Build and return an authorized API client service.
-     *
-     * @return an authorized API client service
-     * @throws GeneralSecurityException, IOException
-     */
-    public static YouTube getService() throws GeneralSecurityException, IOException {
-      final NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-      Credential credential = authorize(httpTransport);
-      return new YouTube.Builder(httpTransport, JSON_FACTORY, credential)
-              .setApplicationName(APPLICATION_NAME)
-              .build();
-    }
-
-//    static {
-//
-//      List<VideoEntry> list = new ArrayList<VideoEntry>();
-//      list.add(new VideoEntry("YouTube Collection", "Y_UmWdcTrrc"));
-//      list.add(new VideoEntry("GMail Tap", "1KhZKNZO8mQ"));
-//      list.add(new VideoEntry("Chrome Multitask", "UiLSiqyDf4Y"));
-//      list.add(new VideoEntry("Google Fiber", "re0VRK6ouwI"));
-//      list.add(new VideoEntry("Autocompleter", "blB_X38YSxQ"));
-//      list.add(new VideoEntry("GMail Motion", "Bu927_ul_X0"));
-//      list.add(new VideoEntry("Translate for Animals", "3I24bSteJpw"));
-//      videoList = Collections.unmodifiableList(list);
-//    }
 
     private PageAdapter adapter;
-    private View videoBox;
 
     @Override
     public void onCreate(Bundle savedInstanceState)  {
@@ -411,34 +339,31 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
     public void onActivityCreated(Bundle savedInstanceState) {
       super.onActivityCreated(savedInstanceState);
 
-      videoBox = getActivity().findViewById(R.id.video_box);
       getListView().setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 
     }
 
     @Override
     public void onListItemClick(ListView l, View v, int position, long id) {
+
       String videoId = videoList.get(position).videoId;
-
-      VideoFragment videoFragment =
-              (VideoFragment) getFragmentManager().findFragmentById(R.id.video_fragment_container);
-      videoFragment.setVideoId(videoId);
-
-      // The videoBox is INVISIBLE if no video was previously selected, so we need to show it now.
-      if (videoBox.getVisibility() != View.VISIBLE) {
-        if (getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT) {
-          // Initially translate off the screen so that it can be animated in from below.
-          videoBox.setTranslationY(videoBox.getHeight());
+      Intent intent = null;
+      intent = YouTubeStandalonePlayer.createVideoIntent(
+               getActivity(), BuildConfig.YOUTUBE_API_KEY, videoId,0, true, false);
+      if (intent != null) {
+        if (canResolveIntent(intent)) {
+          startActivityForResult(intent, 1);
+        } else {
+          // Could not resolve the intent - must need to install or update the YouTube API service.
+          YouTubeInitializationResult.SERVICE_MISSING
+                  .getErrorDialog(getActivity(), 2).show();
         }
-        videoBox.setVisibility(View.VISIBLE);
-      }
-
-      // If the fragment is off the screen, we animate it in.
-      if (videoBox.getTranslationY() > 0) {
-        videoBox.animate().translationY(0).setDuration(ANIMATION_DURATION_MILLIS);
       }
     }
-
+    private boolean canResolveIntent(Intent intent) {
+      List<ResolveInfo> resolveInfo = getActivity().getPackageManager().queryIntentActivities(intent, 0);
+      return resolveInfo != null && !resolveInfo.isEmpty();
+    }
     @Override
     public void onDestroyView() {
       super.onDestroyView();
@@ -590,92 +515,92 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
 
   }
 
-  public static final class VideoFragment extends YouTubePlayerFragment
-          implements OnInitializedListener {
-
-    private YouTubePlayer player;
-    private String videoId;
-
-    public static VideoFragment newInstance() {
-      return new VideoFragment();
-    }
-    private final YouTubePlayer.PlaybackEventListener mPlaybackEventListener = new YouTubePlayer.PlaybackEventListener() {
-      @Override
-      public void onPlaying() {
-        SharedPreferences prefs = getActivity().getPreferences(MODE_PRIVATE);
-        Date dNow = new Date( );
-        SimpleDateFormat ft =
-                new SimpleDateFormat ("yyyy-MM-dd");
-        prefs.edit().putString(videoId, ft.format(dNow)).commit();
-      }
-
-      @Override
-      public void onPaused() {
-
-      }
-
-      @Override
-      public void onStopped() {
-
-      }
-
-      @Override
-      public void onBuffering(boolean b) {
-
-      }
-
-      @Override
-      public void onSeekTo(int i) {
-
-      }
-    };
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-      super.onCreate(savedInstanceState);
-      initialize(BuildConfig.YOUTUBE_API_KEY, this);
-    }
-
-    @Override
-    public void onDestroy() {
-      if (player != null) {
-        player.release();
-      }
-      super.onDestroy();
-    }
-
-    public void setVideoId(String videoId) {
-      if (videoId != null && !videoId.equals(this.videoId)) {
-        this.videoId = videoId;
-        if (player != null) {
-          player.cueVideo(videoId);
-        }
-      }
-    }
-
-    public void pause() {
-      if (player != null) {
-        player.pause();
-      }
-    }
-
-    @Override
-    public void onInitializationSuccess(Provider provider, YouTubePlayer player, boolean restored) {
-      this.player = player;
-      player.addFullscreenControlFlag(YouTubePlayer.FULLSCREEN_FLAG_CUSTOM_LAYOUT);
-      player.setOnFullscreenListener((VideoListDemoActivity) getActivity());
-      if (!restored && videoId != null) {
-        player.cueVideo(videoId);
-      }
-      player.setPlaybackEventListener(mPlaybackEventListener);
-    }
-
-    @Override
-    public void onInitializationFailure(Provider provider, YouTubeInitializationResult result) {
-      this.player = null;
-    }
-
-  }
+//  public static final class VideoFragment extends YouTubePlayerFragment
+//          implements OnInitializedListener {
+//
+//    private YouTubePlayer player;
+//    private String videoId;
+//
+//    public static VideoFragment newInstance() {
+//      return new VideoFragment();
+//    }
+//    private final YouTubePlayer.PlaybackEventListener mPlaybackEventListener = new YouTubePlayer.PlaybackEventListener() {
+//      @Override
+//      public void onPlaying() {
+//        SharedPreferences prefs = getActivity().getPreferences(MODE_PRIVATE);
+//        Date dNow = new Date( );
+//        SimpleDateFormat ft =
+//                new SimpleDateFormat ("yyyy-MM-dd");
+//        prefs.edit().putString(videoId, ft.format(dNow)).commit();
+//      }
+//
+//      @Override
+//      public void onPaused() {
+//
+//      }
+//
+//      @Override
+//      public void onStopped() {
+//
+//      }
+//
+//      @Override
+//      public void onBuffering(boolean b) {
+//
+//      }
+//
+//      @Override
+//      public void onSeekTo(int i) {
+//
+//      }
+//    };
+//
+//    @Override
+//    public void onCreate(Bundle savedInstanceState) {
+//      super.onCreate(savedInstanceState);
+//      initialize(BuildConfig.YOUTUBE_API_KEY, this);
+//    }
+//
+//    @Override
+//    public void onDestroy() {
+//      if (player != null) {
+//        player.release();
+//      }
+//      super.onDestroy();
+//    }
+//
+//    public void setVideoId(String videoId) {
+//      if (videoId != null && !videoId.equals(this.videoId)) {
+//        this.videoId = videoId;
+//        if (player != null) {
+//          player.cueVideo(videoId);
+//        }
+//      }
+//    }
+//
+//    public void pause() {
+//      if (player != null) {
+//        player.pause();
+//      }
+//    }
+//
+//    @Override
+//    public void onInitializationSuccess(Provider provider, YouTubePlayer player, boolean restored) {
+//      this.player = player;
+//      player.addFullscreenControlFlag(YouTubePlayer.FULLSCREEN_FLAG_CUSTOM_LAYOUT);
+//      player.setOnFullscreenListener((VideoListDemoActivity) getActivity());
+//      if (!restored && videoId != null) {
+//        player.cueVideo(videoId);
+//      }
+//      player.setPlaybackEventListener(mPlaybackEventListener);
+//    }
+//
+//    @Override
+//    public void onInitializationFailure(Provider provider, YouTubeInitializationResult result) {
+//      this.player = null;
+//    }
+//
+//  }
 
   private static final class VideoEntry {
     private final String text;
@@ -693,23 +618,23 @@ public final class VideoListDemoActivity extends Activity implements OnFullscree
 
   // Utility methods for layouting.
 
-  private int dpToPx(int dp) {
-    return (int) (dp * getResources().getDisplayMetrics().density + 0.5f);
-  }
-
-  private static void setLayoutSize(View view, int width, int height) {
-    LayoutParams params = view.getLayoutParams();
-    params.width = width;
-    params.height = height;
-    view.setLayoutParams(params);
-  }
-
-  private static void setLayoutSizeAndGravity(View view, int width, int height, int gravity) {
-    FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) view.getLayoutParams();
-    params.width = width;
-    params.height = height;
-    params.gravity = gravity;
-    view.setLayoutParams(params);
-  }
+//  private int dpToPx(int dp) {
+//    return (int) (dp * getResources().getDisplayMetrics().density + 0.5f);
+//  }
+//
+//  private static void setLayoutSize(View view, int width, int height) {
+//    LayoutParams params = view.getLayoutParams();
+//    params.width = width;
+//    params.height = height;
+//    view.setLayoutParams(params);
+//  }
+//
+//  private static void setLayoutSizeAndGravity(View view, int width, int height, int gravity) {
+//    FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) view.getLayoutParams();
+//    params.width = width;
+//    params.height = height;
+//    params.gravity = gravity;
+//    view.setLayoutParams(params);
+//  }
 
 }
