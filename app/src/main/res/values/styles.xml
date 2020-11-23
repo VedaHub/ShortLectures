@@ -16,7 +16,7 @@
 -->
 <resources>
 
-  <style name="BlackNoBarsTheme" parent="android:Theme.Black.NoTitleBar.Fullscreen"/>
-  <style name="BlackNoTitleBarTheme" parent="android:Theme.Black.NoTitleBar"/>
+  <style name="BlackNoBarsTheme" parent="Theme.MaterialComponents.Light"/>
+  <style name="BlackNoTitleBarTheme" parent="Theme.MaterialComponents.Light.NoActionBar"/>
 
 </resources>

@@ -13,7 +13,8 @@ android {
         minSdkVersion 14
         targetSdkVersion 30
         buildConfigField("String", "YOUTUBE_API_KEY", apikeyProperties['YOUTUBE_API_KEY'])
-
+        // Enabling multidex support.
+        multiDexEnabled true
     }
 
     buildTypes {
@@ -37,6 +38,8 @@ android {
 //sourceCompatibility = 1.8
 dependencies {
     compile files('libs/YouTubeAndroidPlayerApi.jar')
+    implementation 'com.android.support:multidex:2.0.1'  //with support libraries
+    implementation project(":library")
     implementation 'com.google.android.material:material:1.2.1'
     implementation 'com.google.api-client:google-api-client:1.23.0'
     implementation 'com.google.oauth-client:google-oauth-client-jetty:1.23.0'

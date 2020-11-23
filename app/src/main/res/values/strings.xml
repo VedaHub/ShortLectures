@@ -27,6 +27,7 @@
     <string name="action_bar_demo_name">Overlay ActionBar Demo</string>
     <string name="fullscreen_demo_name">Custom Fullscreen Handling</string>
     <string name="intents_demo_name">YouTube App Launcher Intents</string>
+    <string name="loading">Loading data&#8230;</string>
 
     <string name="playerview_text">This is a YouTubePlayerView!</string>
     <string name="playerfragment_text">This is a YouTubePlayerFragment!</string>
